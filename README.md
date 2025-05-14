@@ -15,14 +15,14 @@ It scans a target host for open ports, grabs service banners, and attempts to id
 ## Usage
 
 ```sh
-python scanner.py -t <target> [-p <ports>] [--threads <num>] [-v] [-o <file>] [--json <file>] [--csv <file>]
+python3 scanner.py -t <target> [-p <ports>] [--threads <num>] [-v] [-o <file>] [--json <file>] [--csv <file>]
 ```
 
 **Examples:**
 ```sh
-python scanner.py -t 192.168.1.1
-python scanner.py -t example.com -p 22,80,443,8080 --threads 200 -v
-python scanner.py -t 10.0.0.5 -p 1-65535 --json results.json
+python3 scanner.py -t 192.168.1.1
+python3 scanner.py -t example.com -p 22,80,443,8080 --threads 200 -v
+python3 scanner.py -t 10.0.0.5 -p 1-65535 --json results.json
 ```
 
 ## Arguments
