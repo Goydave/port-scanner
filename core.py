@@ -1,30 +1,80 @@
 import socket
 import threading 
 from queue import Queue
+from config import DEFAULT_TIMEOUT, BANNER_GRAB_BYTES
+
 
 print_lock = threading.Lock() # To avoid messy print outputs
+
+# simple servuce Probe dictionary (expanded as needed)
+SERVICE_PROBES = {
+    21: b"QUIT\r\n",
+    22: b"\r\n",
+    23: b"\r\n",
+    25: b"EHLO example.com\r\n",
+    53: b"\r\n\r\n",
+    80: b"HEAD / HTTP/1.0\r\n\r\n",
+    110: b"QUIT\r\n",
+    143: b". LOGOUT\r\n",
+    443: b"HEAD / HTTP/1.0\r\n\r\n",
+    3306: b"\r\n",
+    3389: b"\r\n",
+    5900: b"\r\n",
+    8080: b"HEAD / HTTP/1.0\r\n\r\n",
+    8081: b"HEAD / HTTP/1.0\r\n\r\n",
+    8443: b"HEAD /HTTP/1.0\r\n\r\n",
+    8888: b"HEAD / HTTP/1.0\r\n\r\n",
+    9000: b"HEAD / HTTP/1.0\r\n\r\n",
+    9200: b"HEAD / HTTP/1.0\r\n\r\n",
+    9300: b"HEAD / HTTP/1.0\r\n\r\n",
+}
+
+def identify_service(port, banner):
+    # very basic pattern matching for demostarating 
+    if not banner:
+        return "unknown"
+    banner = banner.lower()
+    if "ssh" in banner:
+        return "SSH"
+    if "http" in banner:
+        return "HTTP"
+    if "smtp" in banner:
+        return "SMTP"
+    if "ftp" in banner:
+        return "FTP"
+    if "mysql" in banner:
+        return "MYSQL"
+    if "rdp" in banner or "remote desktop" in banner:
+        return "RDP"
+    if "imap" in banner:
+        return "IMAP"
+    if "pop3" in banner:
+        return "POP3"
+    return "unknown"
+
 
 def scan_port(target, port, results, verbose=False):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(1)
         result = sock.connect_ex((target, port))
-        sock.connect_ex((target, port))
 
         if result == 0:
+            probe = SERVICE_PROBES.get(port, b"\r\n")
             try:
-                sock.sendall(b"\r\n") # wake up banner if needed 
-                banner = sock.recv(1024).decode(errors="ignore").strip()
+                sock.sendall(probe)
+                banner = sock.recv(BANNER_GRAB_BYTES).decode(errors="ignore").strip()
             except Exception:
                 banner = "No Banner received"
-
-            results[port] = {"status": "open", "banner": banner}
+                
+            service = identify_service(port, banner)
+            results[port] = {"status": "open", "banner": banner, "service": service}
             if verbose:
                 with print_lock:
-                    print(f"[+] Port {port} is open - Banner: {banner}")
+                    print(f"[+] Port {port} is open - Service: {service} - Banner: {banner}")
 
         else:
-            results[port] = {"status": "closed", "banner": None}
+            results[port] = {"status": "closed", "banner": None, "service": None}
 
             if verbose:
                 with print_lock:
@@ -33,7 +83,7 @@ def scan_port(target, port, results, verbose=False):
         sock.close()
 
     except Exception as e:
-        results[port] = {"status": "error", "banner": str(e)}
+        results[port] = {"status": "error", "banner": str(e), "service": None}
 
         if verbose:
             with print_lock:

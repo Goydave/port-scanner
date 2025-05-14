@@ -3,6 +3,7 @@ import json
 import csv
 from core import scan_ports
 from utils import validate_ip, parse_ports
+from config import DEFAULT_TIMEOUT, DEFAULT_THREAD_COUNT, DEFAULT_PORT_RANGE, BANNER_GRAB_BYTES
 
 from colorama import init, Fore, Style
 init(autoreset=True)  # Automatically reset colors after each print
@@ -32,9 +33,10 @@ def main():
     for port in sorted(results.keys()):
         status = results[port]["status"]
         banner = results[port]["banner"]
+        service = results[port].get("service", "unknown")
 
         if status == "open":
-            print(Fore.GREEN + f"[+] Port {port}: {status}")
+            print(Fore.GREEN + f"[+] Port {port}: {status} | Service: {service}")
             if banner:
                 print(Fore.YELLOW + f"    Banner: {banner}")
         else:
@@ -61,11 +63,12 @@ def main():
         try:
             with open(args.csv, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["Port", "Status", "Banner"])
+                writer.writerow(["Port", "Status", "Service", "Banner"])
                 for port in sorted(results.keys()):
                     status = results[port]["status"]
+                    service = results[port].get("services", "unknown")
                     banner = results[port]["banner"]
-                    writer.writerow([port, status, banner or ""])
+                    writer.writerow([port, status, service, banner or ""])
             print(Fore.GREEN + f"[+] Results saved to {args.csv}")
         except Exception as e:
             print(Fore.RED + f"[!] Failed to save CSV: {e}")
